@@ -1,0 +1,46 @@
+name: update
+
+# Upstream publishes releases on its own schedule and this repo has no other
+# reason to change, so a daily poll of the releases API is the whole update
+# story. Opens a PR rather than pushing to main: a bump that fails to build
+# should not become the flake input everyone pulls.
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - id: update
+        run: ./update.sh | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - id: changed
+        run: git diff --quiet src.json || echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      # Proves the new AppImage actually fetches and wraps before a human is
+      # asked to look at the PR.
+      - if: steps.changed.outputs.changed == 'true'
+        run: nix build .#stayfree --print-build-logs
+
+      - if: steps.changed.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chore: stayfree ${{ steps.update.outputs.version }}"
+          title: "chore: bump stayfree"
+          body: |
+            Automated bump from the newest `stayfree-app/desktop-releases` tag.
+            `nix build .#stayfree` passed on this revision.
+          branch: update/stayfree
+          delete-branch: true
