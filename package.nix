@@ -20,7 +20,10 @@ let
 
   # Only used to lift the .desktop file and the icon out of the image; the
   # runnable copy is the wrapped AppImage below.
-  contents = appimageTools.extract { inherit pname version; src = appimage; };
+  contents = appimageTools.extract {
+    inherit pname version;
+    src = appimage;
+  };
 in
 appimageTools.wrapType2 {
   inherit pname version;

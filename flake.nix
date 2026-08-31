@@ -34,7 +34,9 @@
         default = stayfree;
       });
 
-      checks = forAllSystems (pkgs: { inherit (self.packages.${pkgs.stdenv.hostPlatform.system}) stayfree; });
+      checks = forAllSystems (pkgs: {
+        inherit (self.packages.${pkgs.stdenv.hostPlatform.system}) stayfree;
+      });
 
       formatter = forAllSystems (pkgs: pkgs.nixfmt-tree);
     };
